@@ -10,6 +10,7 @@ class Layer:
         self.activation_function = activation_function
 
         self.weights = []
+        self.old_weights = []
         for i in range(self.neurons):
             row = []
             for j in range(self.previous_neurons):
@@ -32,6 +33,7 @@ class Layer:
         # for index, value in enumerate(data_vector):
         #     data_vector[index] = self.activation_function(value)
         self.output = data_vector
+        self.old_weights = self.weights
         return data_vector
 
 
@@ -153,7 +155,7 @@ class Network:
                         for neuron_index in range(layer.neurons):
                             for prev_neuron_index in range(prev_layer.neurons):
                                 output_diff[neuron_index] += prev_layer.sigm[prev_neuron_index] * \
-                                                             prev_layer.weights[prev_neuron_index][neuron_index]
+                                                             prev_layer.old_weights[prev_neuron_index][neuron_index]
 
                     # Цикл, проходящий по нейронам в выбранном слое
                     for neuron_index in range(layer.neurons):

@@ -40,10 +40,11 @@ def load_iris_dataset():
     return iris_x, iris_y
 
 
-def iris_train(data_x = None, data_y = None):
-    iris_x, iris_y = load_iris_dataset()
+def iris_train(data_x=None, data_y=None):
     if data_x is not None and data_y is not None:
         iris_x, iris_y = data_x, data_y
+    else:
+        iris_x, iris_y = load_iris_dataset()
 
     # print(iris[0])
     # print(iris_x[0])
@@ -52,13 +53,12 @@ def iris_train(data_x = None, data_y = None):
     targets = [0.9, 0.5, 0.1]
     learning_rates = [0.01, 0.0001]
     neurons = [[6, 3], [10, 3]]
-    neural_network = cn.Network(epochs=1000, learning_rate=0.01, target=0.1)
+    neural_network = cn.Network(epochs=1000, learning_rate=0.001, target=0.000001)
     neural_network.load_model("save.nn")
     # neural_network.add_input_layer(inputs=4)
     # neural_network.add_hidden_layer(6, cn.sigmoid)
     # neural_network.add_hidden_layer(3, cn.sigmoid)
     neural_network.train(iris_x, iris_y)
-
 
     # for i in targets:
     #     for j in learning_rates:
@@ -72,14 +72,17 @@ def iris_train(data_x = None, data_y = None):
     #             neural_network.train(iris_x, iris_y)
     #             input()
 
-def iris_test():
-    iris_x, iris_y = load_iris_dataset()
-    neural_network = cn.Network(epochs=10, learning_rate=0.0001)
+
+def iris_test(x, y):
+    iris_x, iris_y = x, y
+    neural_network = cn.Network(epochs=1, learning_rate=0.0001)
     neural_network.load_model("save.nn")
     test_index = random.randint(0, len(iris_x))
 
     hit = 0
     total = 0
+    class_accuracy = [0, 0, 0]
+
     for i in range(len(iris_x)):
         test_x = iris_x[i]
         test_y = iris_y[i]
@@ -87,13 +90,19 @@ def iris_test():
         # print(predict, test_y)
         if predict == test_y:
             hit += 1
+            if predict == [1, 0, 0]:
+                class_accuracy[0] += 1
+            elif predict == [0, 1, 0]:
+                class_accuracy[1] += 1
+            else:
+                class_accuracy[2] += 1
+
         total += 1
 
     print("Correct:", hit)
     print("Total:", total)
     print("Accuracy:", hit / total)
-    # print("True:   ", test_y)
-    # print("Predict:", predict)
+    print("Class accuracy: ", list(map(lambda x: x / 10, class_accuracy)))
 
 
 def image_normalization(image):
@@ -102,10 +111,25 @@ def image_normalization(image):
 
 if __name__ == '__main__':
     irisx, irisy = load_iris_dataset()
-    print(irisy)
-    print(irisy.count([1, 0, 0]))
-    print(irisy.count([0, 1, 0]))
-    print(irisy.count([0, 0, 1]))
-    exit(0)
-    iris_train()
-    # iris_test()
+    random.seed(73)
+    indexes = []
+    offset = 50
+    for k in range(3):
+        for i in range(10):
+            num = random.randint(k * offset, k * offset + offset)
+            while num in indexes:
+                num = random.randint(k * offset, k * offset + offset)
+            indexes.append(num)
+    indexes.sort()
+    test_x = []
+    test_y = []
+    for i in indexes:
+        test_x.append(irisx[i])
+        test_y.append(irisy[i])
+
+    for i in reversed(indexes):
+        irisx.pop(i)
+        irisy.pop(i)
+
+    # iris_train(data_x=irisx, data_y=irisy)
+    iris_test(test_x, test_y)
