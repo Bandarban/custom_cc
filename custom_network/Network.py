@@ -113,7 +113,7 @@ class Network:
                 for layer in self.hidden_layers:
                     data_vector = layer.fit(data_vector)
 
-                # `print("output", data_vector)
+                #print("output", data_vector)
 
                 output_diff = data_vector - train_data_y
                 mse = np.array(list(map(lambda x: x ** 2, output_diff)))
@@ -123,12 +123,14 @@ class Network:
                     if v > max:
                         max = v
                         index = i
-                predict = [0, 0, 0]
+                predict = [0]*self.hidden_layers[-1].neurons
                 predict[index] = 1
+                # print(predict, train_data_y)
                 if predict == train_data_y:
                     self.accuracy += 1
                 self.count += 1
                 self.iterations += 1
+                #print("MSE",mse)
                 if pair_index == index_list[-1]:
                     loss = np.sum(mse)
                     print("Loss:", abs(np.sum(mse)), "Accuracy:", self.accuracy / self.count)
