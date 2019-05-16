@@ -2,6 +2,7 @@ import custom_network as cn
 import numpy as np
 import random
 
+
 def load_iris_dataset():
     iris = []
     with open("iris.txt", "r") as f:
@@ -38,33 +39,38 @@ def load_iris_dataset():
 
     return iris_x, iris_y
 
-def iris_train():
+
+def iris_train(data_x = None, data_y = None):
     iris_x, iris_y = load_iris_dataset()
+    if data_x is not None and data_y is not None:
+        iris_x, iris_y = data_x, data_y
 
     # print(iris[0])
     # print(iris_x[0])
     # print(min_val, max_val, range)
 
-
-    neural_network = cn.Network(epochs=10, learning_rate=0.0001)
-    neural_network.load_model("good.nn")
+    targets = [0.9, 0.5, 0.1]
+    learning_rates = [0.01, 0.0001]
+    neurons = [[6, 3], [10, 3]]
+    neural_network = cn.Network(epochs=1000, learning_rate=0.01, target=0.1)
+    neural_network.load_model("save.nn")
     # neural_network.add_input_layer(inputs=4)
-    # neural_network.add_hidden_layer(10, cn.sigmoid)
     # neural_network.add_hidden_layer(6, cn.sigmoid)
-    # # neural_network.add_hidden_layer(3, cn.sigmoid)
     # neural_network.add_hidden_layer(3, cn.sigmoid)
+    neural_network.train(iris_x, iris_y)
 
-    try:
-        for i in range(3000000000000):
-            for j in range(len(iris_x)):
-                neural_network.train(iris_x[j], iris_y[j])
-    except Exception as e:
-        print(e)
-        input()
-        for i in range(1):
-            for j in range(len(iris_x)):
-                neural_network.train(iris_x[j], iris_y[j])
 
+    # for i in targets:
+    #     for j in learning_rates:
+    #         for k in neurons:
+    #             neural_network = cn.Network(epochs=1000, learning_rate=j, target=i)
+    #             neural_network.add_input_layer(inputs=4)
+    #             for neuron in k:
+    #                 neural_network.add_hidden_layer(neuron, cn.sigmoid)
+    #             print(f"Target: {i}, Learning rate: {j}, Neurons: {k}")
+    #             input()
+    #             neural_network.train(iris_x, iris_y)
+    #             input()
 
 def iris_test():
     iris_x, iris_y = load_iris_dataset()
@@ -78,18 +84,28 @@ def iris_test():
         test_x = iris_x[i]
         test_y = iris_y[i]
         predict = neural_network.predict(test_x)
-        #print(predict, test_y)
+        # print(predict, test_y)
         if predict == test_y:
             hit += 1
         total += 1
 
     print("Correct:", hit)
     print("Total:", total)
-    print("Accuracy:", hit/total)
+    print("Accuracy:", hit / total)
     # print("True:   ", test_y)
     # print("Predict:", predict)
 
 
+def image_normalization(image):
+    pass
+
+
 if __name__ == '__main__':
-    #iris_train()
-    iris_test()
+    irisx, irisy = load_iris_dataset()
+    print(irisy)
+    print(irisy.count([1, 0, 0]))
+    print(irisy.count([0, 1, 0]))
+    print(irisy.count([0, 0, 1]))
+    exit(0)
+    iris_train()
+    # iris_test()

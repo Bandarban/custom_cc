@@ -68,15 +68,16 @@ class InputLayer:
 
 
 class Network:
-    def __init__(self, epochs: int, learning_rate: float):
+    def __init__(self, epochs: int, learning_rate: float, target=0.1):
         self.input_layer = None
 
         self.hidden_layers = []
-
+        self.target = target
         self.epochs = epochs
         self.learning_rate = learning_rate
         self.accuracy = 0
         self.count = 0
+        self.iterations = 0
 
     def predict(self, train_data_x):
         # forward
@@ -96,67 +97,78 @@ class Network:
         predict[index] = 1
         return predict
 
-    def train(self, train_data_x, train_data_y):
-        # forward
-        self.input_layer.fit(inputs=train_data_x)
-        data_vector = self.input_layer.vector
+    def train(self, dataset_x, dataset_y):
+        for epoch in range(self.epochs):
+            index_list = list(range(len(dataset_x)))
+            random.shuffle(index_list)
+            for pair_index in index_list:
+                train_data_x = dataset_x[pair_index]
+                train_data_y = dataset_y[pair_index]
+                # forward
+                self.input_layer.fit(inputs=train_data_x)
+                data_vector = self.input_layer.vector
 
-        for layer in self.hidden_layers:
-            data_vector = layer.fit(data_vector)
+                for layer in self.hidden_layers:
+                    data_vector = layer.fit(data_vector)
 
-        # print("output", data_vector)
+                # `print("output", data_vector)
 
-        output_diff = data_vector - train_data_y
-        mse = np.array(list(map(lambda x: x ** 2, output_diff)))
-        max = 0
-        index = 0
-        for i, v in enumerate(data_vector):
-            if v > max:
-                max = v
-                index = i
-        predict = [0, 0, 0]
-        predict[index] = 1
-        if predict == train_data_y:
-            self.accuracy += 1
-        self.count += 1
+                output_diff = data_vector - train_data_y
+                mse = np.array(list(map(lambda x: x ** 2, output_diff)))
+                max = 0
+                index = 0
+                for i, v in enumerate(data_vector):
+                    if v > max:
+                        max = v
+                        index = i
+                predict = [0, 0, 0]
+                predict[index] = 1
+                if predict == train_data_y:
+                    self.accuracy += 1
+                self.count += 1
+                self.iterations += 1
+                if pair_index == index_list[-1]:
+                    loss = np.sum(mse)
+                    print("Loss:", abs(np.sum(mse)), "Accuracy:", self.accuracy / self.count)
+                    self.save_model("save.nn")
 
-        if self.count == 5000:
-            print("Loss:", abs(np.sum(mse)), "Accuracy:", self.accuracy / self.count)
-            self.save_model("save.nn")
-            # if self.accuracy / self.count > 0.7:
-            #     self.save_model("good.nn")
-            #     exit(0)
-            self.count = 0
-            self.accuracy = 0
+                    if loss <= self.target:
+                        print(f"Target was reached. Iterations: {self.iterations},"
+                              f" epochs: {epoch}")
+                        return
 
-        # back
-        # print(data_vector)
-        # Цикл, проходящий по слоям сети в обратном порядке
-        for index, layer in enumerate(reversed(self.hidden_layers)):
-            # Индекс слоя относительно self.hidden_layers
-            true_index = len(self.hidden_layers) - index - 1
-            # print(index)
-            if index != 0:
-                prev_layer = self.hidden_layers[true_index + 1]
+                    self.count = 0
+                    self.accuracy = 0
 
-                output_diff = layer.neurons * [0]
-                for neuron_index in range(layer.neurons):
-                    for prev_neuron_index in range(prev_layer.neurons):
-                        output_diff[neuron_index] += prev_layer.sigm[prev_neuron_index] * \
-                                                     prev_layer.weights[prev_neuron_index][neuron_index]
+                # back
+                # print(data_vector)
+                # Цикл, проходящий по слоям сети в обратном порядке
+                for index, layer in enumerate(reversed(self.hidden_layers)):
+                    # Индекс слоя относительно self.hidden_layers
+                    true_index = len(self.hidden_layers) - index - 1
+                    # print(index)
+                    if index != 0:
+                        prev_layer = self.hidden_layers[true_index + 1]
+                        output_diff = layer.neurons * [0]
+                        for neuron_index in range(layer.neurons):
+                            for prev_neuron_index in range(prev_layer.neurons):
+                                output_diff[neuron_index] += prev_layer.sigm[prev_neuron_index] * \
+                                                             prev_layer.weights[prev_neuron_index][neuron_index]
 
-            # Цикл, проходящий по нейронам в выбранном слое
-            for neuron_index in range(layer.neurons):
-                sigm = 2 * output_diff[neuron_index] * sigmoid_derivative(layer.before_activation[neuron_index])
-                layer.sigm[neuron_index] = sigm
-                dB = sigm * self.learning_rate
-                layer.offset_neurons[neuron_index] -= dB
-                # Цикл проходящий по связанным нейронам с предыдущего слоя
-                for previous_neuron_index, previous_neuron in enumerate(self.hidden_layers[true_index - 1].output):
-                    # Изменение весов
-                    dW = self.learning_rate * sigm * previous_neuron
-                    layer.weights[neuron_index][previous_neuron_index] -= dW
-                    # Изменение весов нейрона смешения
+                    # Цикл, проходящий по нейронам в выбранном слое
+                    for neuron_index in range(layer.neurons):
+                        sigm = 2 * output_diff[neuron_index] * sigmoid_derivative(layer.before_activation[neuron_index])
+                        layer.sigm[neuron_index] = sigm
+                        dB = sigm * self.learning_rate
+                        layer.offset_neurons[neuron_index] -= dB
+                        # Цикл проходящий по связанным нейронам с предыдущего слоя
+                        for previous_neuron_index, previous_neuron in enumerate(
+                                self.hidden_layers[true_index - 1].output):
+                            # Изменение весов
+                            dW = self.learning_rate * sigm * previous_neuron
+                            layer.weights[neuron_index][previous_neuron_index] -= dW
+                            # Изменение весов нейрона смешения
+        print("All epoch was ended.")
 
     def save_model(self, name):
         dump = {}
